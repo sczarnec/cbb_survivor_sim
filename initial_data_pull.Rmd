@@ -1,0 +1,545 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-12-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+#install.packages("hoopR")
+#install.packages("toRvik")
+library(hoopR)
+library(cbbdata)
+```
+
+
+
+
+```{r}
+
+cbd_torvik_game_prediction("Duke", "Stanford", date = "20251201", location = "H")
+
+```
+
+
+```{r}
+yr=2015
+  
+
+
+games_sample <- read.csv(paste0("games_", yr, "_march_madness_bracket.csv")) %>%
+  mutate(across(where(is.character), ~ recode(.x,
+    "Ole Miss"              = "Mississippi",
+    "UConn"                 = "Connecticut",
+    "Saint John's"          = "St. John's",
+    "Saint Francis U"       = "St. Francis PA",
+    "Omaha"                 = "Nebraska Omaha",
+    "McNeese"               = "McNeese St.",
+    "Grambling"             = "Grambling St.",
+    "NC State"              = "North Carolina St.",
+    "Texas A&M-CC"          = "Texas A&M Corpus Chris",
+    "Miami (FL)"            = "Miami FL",
+    "SE Missouri St."       = "Southeast Missouri St.",
+    "F. Dickinson"          = "Fairleigh Dickinson",
+    "Charleston"            = "College of Charleston",
+    "Louisiana"             = "Louisiana Lafayette",
+    "Northern Ky."          = "Northern Kentucky",
+    "UCSB"                  = "UC Santa Barbara",
+
+    "Wright State"          = "Wright St.",
+    "Boise State"           = "Boise St.",
+    "Michigan State"        = "Michigan St.",
+    "Murray State"          = "Murray St.",
+    "Ohio State"            = "Ohio St.",
+    "San Diego State"       = "San Diego St.",
+    "Georgia State"         = "Georgia St.",
+    "New Mexico State"      = "New Mexico St.",
+    "Montana State"         = "Montana St.",
+    "CS Fullerton"          = "Cal St. Fullerton",
+    "Norfolk State"         = "Norfolk St.",
+    "Iowa State"            = "Iowa St.",
+    "Miami"                 = "Miami FL",
+
+    "Florida State"         = "Florida St.",
+    "Oklahoma State"        = "Oklahoma St.",
+    "St Bonaventure"        = "St. Bonaventure",
+    "Utah State"            = "Utah St.",
+    "Oregon State"          = "Oregon St.",
+    "Morehead State"        = "Morehead St.",
+    "Cleveland State"       = "Cleveland St.",
+
+    "NC Central"            = "North Carolina Central",
+    "Miss. State"           = "Mississippi St.",
+    "Va. Tech"              = "Virginia Tech",
+    "N. Carolina"           = "North Carolina",
+    "N. Dak. St."           = "North Dakota St.",
+    "Prairie View"          = "Prairie View A&M",
+    "N. Kentucky"           = "Northern Kentucky",
+    "G-Webb"                = "Gardner Webb",
+    "Abilene Chr."          = "Abilene Christian",
+
+    "NCCU"                  = "North Carolina Central",
+    "LIU"                   = "LIU Brooklyn",
+    "STBON"                 = "St. Bonaventure",
+    "Miami (Fla.)"          = "Miami FL",
+    "W. Virginia"           = "West Virginia",
+    "TXSO"                  = "Texas Southern",
+    "RAD"                   = "Radford",
+    "Loyola-Chi."           = "Loyola Chicago",
+    "S. Dak St."            = "South Dakota St.",
+    "UNC-Green"             = "UNC Greensboro",
+    "SF Austin"             = "Stephen F. Austin",
+    "CSFullerton"           = "Cal St. Fullerton",
+    "N. Mex. St."           = "New Mexico St.",
+
+    "Kansas State"          = "Kansas St.",
+    "FGCU"                  = "Florida Gulf Coast",
+    "Jacksonville State"    = "Jacksonville St.",
+    "Middle Tennessee St."  = "Middle Tennessee",
+    "Kent State"            = "Kent St.",
+    "Wichita State"         = "Wichita St.",
+
+    "UVA"                   = "Virginia",
+    "UNC"                   = "North Carolina",
+    "Cal"                   = "California",
+    "Saint Joe's"           = "Saint Joseph's",
+    "FDU"                   = "Fairleigh Dickinson",
+    "AR-Little Rock"        = "Arkansas Little Rock",
+    "Fresno State"          = "Fresno St.",
+    "Pitt"                  = "Pittsburgh",
+    "Weber State"           = "Weber St.",
+    "CSU Bakersfield"       = "Cal St. Bakersfield",
+
+    "UNF"                   = "North Florida",
+    "MISS"                  = "Mississippi",
+    "N. Iowa"               = "Northern Iowa",
+    "RMOR"                  = "Robert Morris",
+    "Coastal Car."          = "Coastal Carolina",
+    "Texas So."             = "Texas Southern",
+    "E. Wash."              = "Eastern Washington",
+    "No. Dak. St."          = "North Dakota St.",
+
+    .default = .x
+  )))
+
+if (yr==2024){
+  games_sample = games_sample %>% 
+  mutate(across(where(is.character), ~ recode(.x,
+    "College of Charleston" = "Charleston",
+    "North Carolina St." = "N.C. State",
+
+    .default = .x
+  )))
+}
+
+
+
+teams_list = c(games_sample$team1_name, games_sample$team2_name)
+teams_list = teams_list[substr(teams_list,1,6)!= "Winner"]
+
+wrong_names = c()
+df = cbd_torvik_ratings(year=yr)
+for (tm in teams_list){
+  
+  print(tm)
+
+  tryCatch(
+    {
+      result = df %>% filter(team == tm)
+      
+      if (dim(result)[1]==0){
+        wrong_names = c(wrong_names, tm)
+      }
+    },
+    error = {
+      function(e) {
+        wrong_names <<- c(wrong_names, tm)
+        NULL
+      }
+    }
+  )
+  
+
+  
+
+}
+
+print(wrong_names)
+
+
+```
+
+
+```{r}
+
+for (yr in c(2015:2019,2021:2025)){
+  
+  games_sample <- read.csv(paste0("games_", yr, "_march_madness_bracket.csv")) %>%
+    mutate(across(where(is.character), ~ recode(.x,
+      "Ole Miss"              = "Mississippi",
+      "UConn"                 = "Connecticut",
+      "Saint John's"          = "St. John's",
+      "Saint Francis U"       = "St. Francis PA",
+      "Omaha"                 = "Nebraska Omaha",
+      "McNeese"               = "McNeese St.",
+      "Grambling"             = "Grambling St.",
+      "NC State"              = "North Carolina St.",
+      "Texas A&M-CC"          = "Texas A&M Corpus Chris",
+      "Miami (FL)"            = "Miami FL",
+      "SE Missouri St."       = "Southeast Missouri St.",
+      "F. Dickinson"          = "Fairleigh Dickinson",
+      "Charleston"            = "College of Charleston",
+      "Louisiana"             = "Louisiana Lafayette",
+      "Northern Ky."          = "Northern Kentucky",
+      "UCSB"                  = "UC Santa Barbara",
+  
+      "Wright State"          = "Wright St.",
+      "Boise State"           = "Boise St.",
+      "Michigan State"        = "Michigan St.",
+      "Murray State"          = "Murray St.",
+      "Ohio State"            = "Ohio St.",
+      "San Diego State"       = "San Diego St.",
+      "Georgia State"         = "Georgia St.",
+      "New Mexico State"      = "New Mexico St.",
+      "Montana State"         = "Montana St.",
+      "CS Fullerton"          = "Cal St. Fullerton",
+      "Norfolk State"         = "Norfolk St.",
+      "Iowa State"            = "Iowa St.",
+      "Miami"                 = "Miami FL",
+  
+      "Florida State"         = "Florida St.",
+      "Oklahoma State"        = "Oklahoma St.",
+      "St Bonaventure"        = "St. Bonaventure",
+      "Utah State"            = "Utah St.",
+      "Oregon State"          = "Oregon St.",
+      "Morehead State"        = "Morehead St.",
+      "Cleveland State"       = "Cleveland St.",
+  
+      "NC Central"            = "North Carolina Central",
+      "Miss. State"           = "Mississippi St.",
+      "Va. Tech"              = "Virginia Tech",
+      "N. Carolina"           = "North Carolina",
+      "N. Dak. St."           = "North Dakota St.",
+      "Prairie View"          = "Prairie View A&M",
+      "N. Kentucky"           = "Northern Kentucky",
+      "G-Webb"                = "Gardner Webb",
+      "Abilene Chr."          = "Abilene Christian",
+  
+      "NCCU"                  = "North Carolina Central",
+      "LIU"                   = "LIU Brooklyn",
+      "STBON"                 = "St. Bonaventure",
+      "Miami (Fla.)"          = "Miami FL",
+      "W. Virginia"           = "West Virginia",
+      "TXSO"                  = "Texas Southern",
+      "RAD"                   = "Radford",
+      "Loyola-Chi."           = "Loyola Chicago",
+      "S. Dak St."            = "South Dakota St.",
+      "UNC-Green"             = "UNC Greensboro",
+      "SF Austin"             = "Stephen F. Austin",
+      "CSFullerton"           = "Cal St. Fullerton",
+      "N. Mex. St."           = "New Mexico St.",
+  
+      "Kansas State"          = "Kansas St.",
+      "FGCU"                  = "Florida Gulf Coast",
+      "Jacksonville State"    = "Jacksonville St.",
+      "Middle Tennessee St."  = "Middle Tennessee",
+      "Kent State"            = "Kent St.",
+      "Wichita State"         = "Wichita St.",
+  
+      "UVA"                   = "Virginia",
+      "UNC"                   = "North Carolina",
+      "Cal"                   = "California",
+      "Saint Joe's"           = "Saint Joseph's",
+      "FDU"                   = "Fairleigh Dickinson",
+      "AR-Little Rock"        = "Arkansas Little Rock",
+      "Fresno State"          = "Fresno St.",
+      "Pitt"                  = "Pittsburgh",
+      "Weber State"           = "Weber St.",
+      "CSU Bakersfield"       = "Cal St. Bakersfield",
+  
+      "UNF"                   = "North Florida",
+      "MISS"                  = "Mississippi",
+      "N. Iowa"               = "Northern Iowa",
+      "RMOR"                  = "Robert Morris",
+      "Coastal Car."          = "Coastal Carolina",
+      "Texas So."             = "Texas Southern",
+      "E. Wash."              = "Eastern Washington",
+      "No. Dak. St."          = "North Dakota St.",
+  
+      .default = .x
+    )))
+  
+  if (yr==2024){
+    games_sample = games_sample %>% 
+    mutate(across(where(is.character), ~ recode(.x,
+      "College of Charleston" = "Charleston",
+      "North Carolina St." = "N.C. State",
+  
+      .default = .x
+    )))
+  }
+  
+  
+  if (yr == 2015){
+    end_df = games_sample
+    end_df$season = yr
+  } else {
+    games_sample$season = yr
+    end_df = bind_rows(end_df, games_sample)
+  }
+
+
+}
+```
+
+
+```{r}
+
+mod_df = end_df
+
+next_joiner = mod_df %>% select(game_id, next_game_id, season)
+
+for (i in 1:6){
+  
+  colnames(mod_df)[grep("^next_game_id$",colnames(mod_df))] = paste0("next_game_id", i)
+  by_vec <- c(setNames("game_id",paste0("next_game_id", i)), "season" = "season")
+  mod_df = left_join(mod_df, next_joiner, by = by_vec)
+  
+}
+
+mod_df = mod_df %>% select(-c("next_game_id"))
+
+
+
+
+```
+
+```{r}
+cbd_torvik_game_box(year = 2024) %>% filter(type == "post", substr(team,1,1) =="C")
+```
+
+```{r}
+cbd_torvik_game_prediction("North Carolina St.", "College of Charleston", date = tourney_start_dates[["2024"]], location = "N")
+```
+
+
+
+```{r}
+
+start_comb_df = mod_df
+
+tourney_start_dates = c("2015" = "20150316", "2016" = "20160314", "2017" = "20170313",
+                        "2018" = "20180312", "2019" = "20190318", "2021" = "20210317",
+                        "2022" = "20220314", "2023" = "20230313", "2024" = "20240318",
+                        "2025" = "20250317")
+
+yrs_list = c(2024) #c(2015:2019,2021:2025)
+
+for (yr in yrs_list){
+  filt_df = start_comb_df %>% filter(season==yr) %>%
+    mutate(across(where(is.character), ~ recode(.x,
+      "St. Francis PA"              = "Saint Francis",
+      "N.C. State" = "North Carolina St.",
+      "Charleston" = "College of Charleston",
+      
+  
+      .default = .x
+    )))
+  unique_teams = c(filt_df$team1_name, filt_df$team2_name)
+  unique_teams = unique_teams[substr(unique_teams,1,6)!= "Winner"]
+  
+  pairs_df = as.data.frame(t(combn(unique_teams, 2))) 
+  names(pairs_df) <- c("cur_team","opponent")
+  pairs_df = pairs_df %>% 
+    filter(cur_team=="North Carolina St."|opponent=="North Carolina St."|cur_team=="College of Charleston"|opponent=="College of Charleston")
+  pairs_df$win_prob = NA
+  
+  computation_date = tourney_start_dates[[as.character(yr)]]
+  
+  for (row in 1:dim(pairs_df)[1]){
+    if (row %% 1 == 0){
+      print(row)
+    }
+    cur_team = pairs_df[row,1]
+    opponent = pairs_df[row,2]
+    #Sys.sleep(.25)
+    tryCatch({pairs_df[row,3] = cbd_torvik_game_prediction(cur_team, opponent, date = computation_date, location = "N")[1,]$win_per},
+    error = function(e) {
+      
+      message("Error: ", e$message)
+    })
+  }
+  
+  if (yr == yrs_list[1]){
+    pairs_df$season = yr
+    final_pairs_df = pairs_df
+  } else{
+    pairs_df$season = yr
+    final_pairs_df = bind_rows(pairs_df, final_pairs_df)
+  }
+  
+  #write.csv(final_pairs_df, paste0("final_pairs_", yr, ".csv"))
+  
+}
+
+
+
+
+
+```
+
+
+
+```{r}
+
+yrs_list = c(2015:2019,2021:2025)
+
+
+for (yr in yrs_list){
+
+  filt_df = start_comb_df %>% filter(season==yr)
+  
+  if (yr == 2025){
+    filt_df = filt_df %>% 
+      mutate(across(where(is.character), ~ recode(.x,
+        "St. Francis PA"              = "Saint Francis",
+        
+    
+        .default = .x
+      )))
+  }
+  if (yr == 2024){
+    filt_df = filt_df %>% 
+      mutate(across(where(is.character), ~ recode(.x,
+        "N.C. State" = "North Carolina St.",
+        "Charleston" = "College of Charleston",
+        
+    
+        .default = .x
+      )))
+  }
+  unique_teams = c(filt_df$team1_name, filt_df$team2_name)
+  unique_teams = unique_teams[substr(unique_teams,1,6)!= "Winner"]
+  
+  box_scores = cbd_torvik_game_box(year = yr) %>% filter(type == "post", team %in% unique_teams) %>% select(team, date)
+  
+  by_team_df = box_scores %>%
+    arrange(team, date) %>%
+    group_by(team) %>%
+    mutate(game = paste0("G", row_number()-1)) %>%
+    select(team, game, date) %>%
+    pivot_wider(names_from = game, values_from = date) %>% 
+    mutate(season=yr)
+  
+  if (yr == yrs_list[1]){
+    final_by_team = by_team_df
+  } else{
+    final_by_team = bind_rows(final_by_team, by_team_df)
+  }
+
+
+}
+
+```
+
+```{r}
+
+
+for (yr in yrs_list){
+
+  game_date_map_df1 = mod_df %>% filter(round_num==1) %>%  select(season, game_id, team1_name, grep("next_game_id", names(mod_df))) %>% select(-c(next_game_id6)) %>% left_join(final_by_team%>% filter(season==yr), by = c("team1_name" = "team", "season" = "season")) %>% rename(next_game_id0 = game_id) %>% filter(season==yr)
+  
+  game_date_map_df2 = mod_df %>% filter(round_num==1) %>%  select(season, game_id, team2_name, grep("next_game_id", names(mod_df))) %>% select(-c(next_game_id6)) %>% left_join(final_by_team%>% filter(season==yr), by = c("team2_name" = "team", "season" = "season")) %>% rename(next_game_id0 = game_id) %>% filter(season==yr)
+  
+  game_date_map_df = bind_rows(game_date_map_df1, game_date_map_df2)
+  
+  
+  
+  
+  date_vec = c()
+  for (i in 0:5){
+  
+    new_df = game_date_map_df
+      
+    colnames(new_df)[grep(paste0("next_game_id",as.character(i)), colnames(new_df))] = "cur_col"
+    colnames(new_df)[grep(paste0("G",as.character(i)), colnames(new_df))] = "cur_date"
+    unique_ids = unique(new_df$cur_col)
+    
+    for (id in unique_ids){
+      new_new_df = new_df %>% filter(cur_col == id)
+      date = max(new_new_df$cur_date, na.rm = TRUE)
+      
+      date_vec = c(date_vec, setNames(as.character(date), id))
+    }
+    
+  }
+  
+  
+  date_df = data.frame(
+    game_id   = names(date_vec),
+    date = unname(date_vec),
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+  
+  round_lookup = mod_df %>%  filter(season==yr) %>%  select(game_id, round_num)
+  
+  date_num_df = date_df %>% 
+    left_join(round_lookup, by = "game_id")
+  
+  date_by_rd = date_num_df %>% 
+    select(date, round_num)
+  date_by_rd = date_by_rd[!duplicated(date_by_rd), ]
+  date_by_rd = date_by_rd %>% 
+    arrange(date) %>% 
+    group_by(round_num) %>% 
+    mutate(day_num = row_number()) %>% 
+    ungroup() %>% 
+    mutate(day_num = ifelse(round_num==4, 1, day_num))
+    
+  
+  
+  date_final = date_by_rd %>% 
+    select(-c(round_num)) %>% 
+    right_join(date_num_df, by = "date")
+  
+  date_final$season = yr
+  
+    if (yr == yrs_list[1]){
+      date_final_all = date_final
+    } else{
+      date_final_all = bind_rows(date_final_all, date_final)
+    }
+
+}
+
+#write.csv(date_final_all, "date_final_all.csv")
+```
+
+
+```{r}
+final_mod_df = mod_df
+colnames(final_mod_df)[grep("^game_id$", colnames(final_mod_df))] = "next_game_id0"
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
