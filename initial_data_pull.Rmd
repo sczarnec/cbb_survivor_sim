@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("toRvik")
 library(hoopR)
 library(cbbdata)
+library(tidyverse)
 ```
 
 
@@ -388,7 +389,19 @@ for (yr in yrs_list){
 }
 
 
+final_pairs_fixed1 = read.csv("final_pairs_all_fixed.csv") %>% 
+  select(-c(X))
 
+final_pairs_fixed2 <- final_pairs_fixed1 %>%
+  rename(team_tmp = cur_team) %>%
+  rename(cur_team = opponent) %>%
+  rename(opponent = team_tmp) %>% 
+  mutate(win_prob = 100-win_prob)
+
+final_pairs_final = bind_rows(final_pairs_fixed1, final_pairs_fixed2) %>% 
+  mutate(win_prob = win_prob/100)
+
+write.csv(final_pairs_final, "final_pairs_final.csv")
 
 
 ```
@@ -523,8 +536,22 @@ for (yr in yrs_list){
 
 
 ```{r}
-final_mod_df = mod_df
-colnames(final_mod_df)[grep("^game_id$", colnames(final_mod_df))] = "next_game_id0"
+final_mod_df1 = mod_df %>% 
+  filter(round == "First Four" | round == "Round of 64") %>% 
+  select(round, team1_name, team2_name, game_id, next_game_id1, next_game_id2, next_game_id3, next_game_id4, season)
+colnames(final_mod_df1)[grep("^game_id$", colnames(final_mod_df1))] = "next_game_id0"
+
+final_mod_df2 <- final_mod_df1 %>%
+  rename(team_tmp = team1_name) %>%
+  rename(team1_name = team2_name) %>%
+  rename(team2_name = team_tmp)
+
+final_mod_df = bind_rows(final_mod_df1, final_mod_df2) %>% 
+  select(-c(team2_name))
+
+
+
+#write.csv(final_mod_df, "final_bracket_df.csv")
 
 
 
