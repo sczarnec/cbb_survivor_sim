@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+sim_saves/
+input_data/
+cbb_survivor_sim.Rproj

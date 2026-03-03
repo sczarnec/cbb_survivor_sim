@@ -21,11 +21,6 @@ library(tidyverse)
 
 
 
-```{r}
-
-cbd_torvik_game_prediction("Duke", "Stanford", date = "20251201", location = "H")
-
-```
 
 
 ```{r}
@@ -33,7 +28,8 @@ yr=2015
   
 
 
-games_sample <- read.csv(paste0("games_", yr, "_march_madness_bracket.csv")) %>%
+games_sample <- read.csv(here::here("input_data", "original_pulls",
+                    paste0("games_", yr, "_march_madness_bracket.csv"))) %>%
   mutate(across(where(is.character), ~ recode(.x,
     "Ole Miss"              = "Mississippi",
     "UConn"                 = "Connecticut",
@@ -180,7 +176,8 @@ print(wrong_names)
 
 for (yr in c(2015:2019,2021:2025)){
   
-  games_sample <- read.csv(paste0("games_", yr, "_march_madness_bracket.csv")) %>%
+  games_sample <- read.csv(here::here("input_data", "original_pulls",
+                      paste0("games_", yr, "_march_madness_bracket.csv")))  %>%
     mutate(across(where(is.character), ~ recode(.x,
       "Ole Miss"              = "Mississippi",
       "UConn"                 = "Connecticut",
@@ -389,7 +386,8 @@ for (yr in yrs_list){
 }
 
 
-final_pairs_fixed1 = read.csv("final_pairs_all_fixed.csv") %>% 
+
+final_pairs_fixed1 = read.csv(here::here("input_data", "original_pulls","final_pairs_all_fixed.csv")) %>% 
   select(-c(X))
 
 final_pairs_fixed2 <- final_pairs_fixed1 %>%
@@ -401,7 +399,13 @@ final_pairs_fixed2 <- final_pairs_fixed1 %>%
 final_pairs_final = bind_rows(final_pairs_fixed1, final_pairs_fixed2) %>% 
   mutate(win_prob = win_prob/100)
 
-write.csv(final_pairs_final, "final_pairs_final.csv")
+
+
+
+# out_path <- here::here("final_pairs_final.csv")
+# write.csv(final_pairs_final, out_path, row.names = FALSE)
+
+
 
 
 ```
@@ -531,27 +535,34 @@ for (yr in yrs_list){
 
 }
 
-#write.csv(date_final_all, "date_final_all.csv")
+
+# out_path <- here::here("date_final_all.csv")
+# write.csv(date_final_all, out_path, row.names = FALSE)
 ```
 
 
 ```{r}
 final_mod_df1 = mod_df %>% 
   filter(round == "First Four" | round == "Round of 64") %>% 
-  select(round, team1_name, team2_name, game_id, next_game_id1, next_game_id2, next_game_id3, next_game_id4, next_game_id5, season)
+  select(round, team1_name, team2_name, team1_seed, team2_seed, game_id, next_game_id1, next_game_id2, next_game_id3, next_game_id4, next_game_id5, season)
 colnames(final_mod_df1)[grep("^game_id$", colnames(final_mod_df1))] = "next_game_id0"
 
 final_mod_df2 <- final_mod_df1 %>%
   rename(team_tmp = team1_name) %>%
   rename(team1_name = team2_name) %>%
-  rename(team2_name = team_tmp)
+  rename(team2_name = team_tmp) %>% 
+
+  rename(seed_tmp = team1_seed) %>%
+  rename(team1_seed = team2_seed) %>%
+  rename(team2_seed = seed_tmp)
 
 final_mod_df = bind_rows(final_mod_df1, final_mod_df2) %>% 
-  select(-c(team2_name))
+  select(-c(team2_name, team2_seed))
 
 
 
-write.csv(final_mod_df, "final_bracket_df.csv")
+# out_path <- here::here("final_bracket_df_w_seed.csv")
+# write.csv(final_mod_df, out_path, row.names = FALSE)
 
 
 
