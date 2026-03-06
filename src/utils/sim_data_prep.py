@@ -2,36 +2,88 @@ import pandas as pd
 import numpy as np
 
 
-def prep_data(season):
+def prep_data(season: int):
+    """
+    Function to prep data from initial inputs
 
+    Args
+    - season = season
+
+    Output
+    - team_seed_arr_orig: array with (team id) as index and val = seed
+    - first4_pair_list: four lists of two-item lists with pairs of first4 teams
+    - bracket_arr_orig: array with (team id, round id) and val = game_id
+    - team_day_list: list[rd][day], with team id index and 0/1 day value
+    - potential_opps_arr_orig: list of arrays (list[rd]) containing arrays with (team id, team id) and val = 0/1 can play each other
+    - game_match_arr_orig: array with (team id, game id) and val = 0/1 can play in that game
+    - unique_games_comb: list of game_ids for each day
+    - wp_arr_orig: array with (team id, team id) and val = win prob
+    - groups_ff_orig: two lists representing a potential final four matchup with team ids in that one
+    - groups_ee_orig: four lists representing a potential elite eight matchup with team ids in that one
+    """
+
+    # load data in
     bracket_df, win_prob_df, dates_df = _load_data(season)
 
+    # structure the initial data
     bracket_df_struct, first4_teams, bracket_df_first4, team_seed_arr_orig = _structure_bracket(bracket_df)
 
+    # structure first 4 teams
     first4_pair_list = _create_first4_pairs(bracket_df_struct, first4_teams, bracket_df_first4)
 
+    # structure bracket and games
     bracket_arr_orig, unique_games_all = _create_bracket_arr(bracket_df_struct)
 
+    # structure day info
     dates_arr, team_day_list = _create_dates_and_days(dates_df, bracket_df_struct)
 
+    # structure potential opponent info
     potential_opps_arr_orig = _create_potential_opps_arr(bracket_arr_orig)
 
+    # structure team, game_id info
     game_match_arr_orig = _create_game_match_arr(bracket_df_struct)
 
+    # structure unique games
     unique_games_comb = _create_unique_games_comb(dates_arr, unique_games_all)
 
+    # structure win prob combination array
     wp_arr_orig = _create_wp_arr(win_prob_df)
 
+    # separate teams into different potential ff and ee games
     groups_ff_orig, groups_ee_orig = _create_ff_ee_groups(bracket_arr_orig)
 
+    initial_data_dict = {
+        "season": str(season),
+        "team_seed_arr_orig": team_seed_arr_orig,
+        "first4_pair_list": first4_pair_list,
+        "bracket_arr_orig": bracket_arr_orig,
+        "team_day_list": team_day_list,
+        "potential_opps_arr_orig": potential_opps_arr_orig,
+        "game_match_arr_orig": game_match_arr_orig,
+        "unique_games_comb": unique_games_comb,
+        "wp_arr_orig": wp_arr_orig,
+        "groups_ff_orig": groups_ff_orig,
+        "groups_ee_orig": groups_ee_orig
+    }
 
-    return first4_pair_list, bracket_arr_orig, team_day_list, potential_opps_arr_orig, game_match_arr_orig, unique_games_comb, wp_arr_orig, groups_ff_orig, groups_ee_orig
+
+    return initial_data_dict
 
 
 
 
 
-def _load_data(season):
+def _load_data(season: int):
+
+    """
+    Load in initial inputs
+
+    Output:
+    - bracket_df: loaded in df with bracket info, filtered for season
+    - win_prob: loaded in df with win prob combination info, filtered for season
+    - dates_df: loaded in df with dates of game ids info, filtered for season
+    """
+
     # load in df with all bracket info
     bracket_df = pd.read_csv("input_data/final_bracket_df_w_seed.csv").iloc[:, 1:].copy()
     bracket_df = bracket_df.loc[bracket_df["season"]==season]
@@ -47,7 +99,17 @@ def _load_data(season):
     return bracket_df, win_prob_df, dates_df
 
 
-def _structure_bracket(bracket_df):
+def _structure_bracket(bracket_df: pd.DataFrame):
+
+    """
+    Initial structuring of the bracket, some first four logic
+
+    Output:
+    - bracket_df_struct: bracket_df with the first round and on games (including duplicates if could be one of two first four teams), sorted by team name
+    - first4_teams: unique first four teams as a list
+    - bracket_df_first4: bracket_df filtered for just first4 teams
+    - team_seed_arr_orig: arr with (team id) as index and val = seed
+    """
 
     # pull out first four teams
     bracket_df_first4 = bracket_df.loc[bracket_df["round"]=="First Four",["team1_name", "next_game_id1"]]
@@ -68,8 +130,8 @@ def _structure_bracket(bracket_df):
     # sort teams
     bracket_df2 = bracket_df2.sort_values("team1_name")
 
+    # pull out team id/seed
     team_seed_arr_orig = bracket_df2["team1_seed"].to_numpy(dtype = int)
-
     bracket_df_struct = bracket_df2.drop(columns=["team1_seed"], axis = 1)
 
 
@@ -77,6 +139,13 @@ def _structure_bracket(bracket_df):
 
 
 def _create_first4_pairs(bracket_df_struct, first4_teams, bracket_df_first4):
+
+    """
+    Find pairs for first four teams
+
+    Output:
+    - first4_pair_list: four lists of two-item lists with pairs of first4 teams
+    """
 
 
     # pull out first four matchup pairs of team indices
@@ -98,6 +167,13 @@ def _create_first4_pairs(bracket_df_struct, first4_teams, bracket_df_first4):
 
 
 def _create_bracket_arr(bracket_df_struct):
+    """
+    Create team, round array
+
+    Outputs:
+    - bracket_arr_orig: array with (team id, round id) and val = game_id
+    - unique_games_all: list of all unique game ids
+    """
 
 
     # initialize unique game ids for each round
@@ -140,16 +216,26 @@ def _create_bracket_arr(bracket_df_struct):
 
 def _create_dates_and_days(dates_df, bracket_df_struct):
 
+    """
+    Grab game days for the games
+
+    Outputs:
+    - dates_arr: array with (game_id) and val = day_num
+    - team_dat_list: list[rd][day], with team id index and 0/1 day value
+    """
+
 
     # create list of round days that corresponds with unique game_id indices
     dates_df_short = dates_df[["game_id", "day_num"]].sort_values("game_id")
     dates_arr = dates_df_short["day_num"].to_numpy(dtype=int)
 
-
+    # map game ids and day nums, replace game_ids with day nums
     game_day_map = dict(zip(dates_df_short["game_id"], dates_df_short["day_num"]))
 
     bracket_day_arr_orig = bracket_df_struct.replace(game_day_map).sort_values("team1_name").drop(columns=["round", "team1_name", "season"]).to_numpy()
 
+
+    # create list for if teams could play in a certain round/day combo
     team_day_list = []
     for c in range(3):
 
@@ -170,7 +256,14 @@ def _create_dates_and_days(dates_df, bracket_df_struct):
 
 def _create_potential_opps_arr(bracket_arr_orig):
 
+    """
+    Create array with potential opponents for each team
 
+    Output
+    - potential_opps_arr_orig: arr[rd] with (team id, team id) and val = 0/1 can play each other
+    """
+
+    # create initial array
     potential_opps_arr_start = []
     for r in range(6):
         cut = bracket_arr_orig[:, r]
@@ -180,6 +273,7 @@ def _create_potential_opps_arr(bracket_arr_orig):
         potential_opps_arr_start.append(potential_opps_arr_cur)
 
 
+    # you can't play a team you already were lined up to play a previous round, get rid of those
     potential_opps_arr_orig = [potential_opps_arr_start[0].copy()]
 
     for i in range(1, len(potential_opps_arr_start)):
@@ -194,6 +288,13 @@ def _create_potential_opps_arr(bracket_arr_orig):
 
 
 def _create_game_match_arr(bracket_df_struct):
+
+    """
+    Create array with which teams play in which games
+
+    Output
+    - game_match_arr_orig: array with (team id, game id) and val = 0/1 can play in that game
+    """
 
     # create a team, game_id df for which teams play in certain games
     id_cols = [c for c in bracket_df_struct.columns if c.startswith("next_game_id")]
@@ -220,10 +321,18 @@ def _create_game_match_arr(bracket_df_struct):
 
 def _create_unique_games_comb(dates_arr, unique_games_all):
 
+    """
+    Find unique games for each round
+
+    Output
+    - unique_games_comb: list of game_ids for each day
+    """
+
     # create new game_id structure so we know differences between day 1 and day 2 games for simulation
     unique_games_d1 = []
     unique_games_d2 = []
 
+    # find unique games for each round
     for r in list(range(6)):
 
         if r <= 2:
@@ -251,6 +360,13 @@ def _create_unique_games_comb(dates_arr, unique_games_all):
 
 def _create_wp_arr(win_prob_df):
 
+    """
+    Create array w all possible matchup win probs
+
+    Output
+    - wp_arr_orig: array with (team id, team id) and val = win prob
+    """
+
     # create array for team, team win probabilities
     df = win_prob_df.drop(columns=["season"], errors="ignore").sort_values("cur_team")
 
@@ -276,13 +392,21 @@ def _create_wp_arr(win_prob_df):
 
 def _create_ff_ee_groups(bracket_arr_orig):
 
+    """
+    Create groups for which teams could play in certain FF/EE games
 
+    Outputs
+    - groups_ff_orig: two lists representing a potential final four matchup with team ids in that one
+    - groups_ee_orig: four lists representing a potential elite eight matchup with team ids in that one
+    """
+
+    # final four
     vals_ff = np.unique(bracket_arr_orig[:, 4])
     groups_ff_orig = {f"group{i+1}": np.where(bracket_arr_orig[:, 4] == v)[0].tolist()
             for i, v in enumerate(vals_ff)}
 
 
-
+    # elite eight
     vals_ee = np.unique(bracket_arr_orig[:, 3])
     groups_ee_orig = {f"group{i+1}": np.where(bracket_arr_orig[:, 3] == v)[0].tolist()
             for i, v in enumerate(vals_ee)}
