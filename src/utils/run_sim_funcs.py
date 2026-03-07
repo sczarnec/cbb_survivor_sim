@@ -29,7 +29,7 @@ class SimConfig:
 
         self.survivor_policies: list = survivor_policies
 
-        self.ff_pair_list: list = initial_data_dict["ff_pair_list"]
+        self.first4_pair_list: list = initial_data_dict["first4_pair_list"]
         self.wp_arr_orig: np.array = initial_data_dict["wp_arr_orig"]
         self.bracket_arr_orig: np.array = initial_data_dict["bracket_arr_orig"]
         self.game_match_arr_orig: np.array = initial_data_dict["game_match_arr_orig"]
@@ -272,11 +272,12 @@ class TournamentSimulator:
         # initialize some data that stays the same
         potential_opps_arr = self.cfg.potential_opps_arr_orig.copy()
         team_seed_arr = self.cfg.team_seed_arr_orig.copy()
-        groups_ff = self.groups_ff_orig.copy()
-        groups_ee = self.groups_ee_orig.copy()
-        ff_pair_list = self.ff_pair_list.copy()
-        days_by_round = self.days_by_round.copy()
-        unique_games_comb = self.unique_games_comb.copy()
+        groups_ff = self.cfg.groups_ff_orig.copy()
+        groups_ee = self.cfg.groups_ee_orig.copy()
+        first4_pair_list = self.cfg.first4_pair_list.copy()
+        days_by_round = self.cfg.days_by_round.copy()
+        unique_games_comb = self.cfg.unique_games_comb.copy()
+        team_day_list = self.cfg.team_day_list.copy()
 
 
         # loop through iterations
@@ -300,7 +301,7 @@ class TournamentSimulator:
 
 
             # sim the first four beforehand
-            for g in ff_pair_list:
+            for g in first4_pair_list:
 
                 # game 
                 t1, t2 = g
@@ -341,7 +342,7 @@ class TournamentSimulator:
 
                     # choose a team for each policy
                     if self.cfg.run_survivor == True:
-                        chosen_teams = self.survivor_choose_team(interm_wp_arr=wp_arr, potential_opps_arr=potential_opps_arr, team_seed_arr=team_seed_arr, r_cur=r, policies_alive=policies_alive, not_picked=not_picked, d=d, still_alive_arr=still_alive_arr, groups_ff=groups_ff, groups_ee=groups_ee)
+                        chosen_teams = self.survivor_choose_team(interm_wp_arr=wp_arr, potential_opps_arr=potential_opps_arr, team_seed_arr=team_seed_arr, r_cur=r, policies_alive=policies_alive, not_picked=not_picked, d=d, still_alive_arr=still_alive_arr, groups_ff=groups_ff, groups_ee=groups_ee, team_day_list=team_day_list)
 
                     # go thru each game in the round and determine winner
                     for g in unique_games_comb[d][r]:
@@ -469,7 +470,7 @@ class TournamentSimulator:
         # survivor results, config
         if self.cfg.run_survivor == True:
             survivor_results_df = pd.DataFrame({i: col for i, col in enumerate(policies_round_out_save)})
-            survivor_results_df.to_csv(f"sim_saves/run_{self.sim_id}/survivor_results/run_{self.sim_id}_survivor_results_{self.season}.csv")
+            survivor_results_df.to_csv(f"sim_saves/run_{self.sim_id}/survivor_results/run_{self.sim_id}_survivor_results_{self.cfg.season}.csv")
 
             cfg_dict = asdict(self.cfg)
             with open(f"sim_saves/run_{self.sim_id}/run_{self.sim_id}_config.yaml", "w") as f:
@@ -479,12 +480,12 @@ class TournamentSimulator:
         if self.cfg.store_picked_teams == True:
             #print(chosen_teams_all_save)
             chosen_team_results_df = pd.DataFrame(chosen_teams_all_save).T
-            chosen_team_results_df.to_csv(f"sim_saves/run_{self.sim_id}/chosen_teams/run_{self.sim_id}_chosen_teams_{self.season}.csv")
+            chosen_team_results_df.to_csv(f"sim_saves/run_{self.sim_id}/chosen_teams/run_{self.sim_id}_chosen_teams_{self.cfg.season}.csv")
 
         # tourney results
         if self.cfg.store_tourney_results == True:
             tourney_results_pdf = pd.DataFrame(self.tourney_results)
-            tourney_results_pdf.to_csv(f"sim_saves/run_{self.sim_id}/tourney_results/run_{self.sim_id}_tourney_results_{self.season}.csv")
+            tourney_results_pdf.to_csv(f"sim_saves/run_{self.sim_id}/tourney_results/run_{self.sim_id}_tourney_results_{self.cfg.season}.csv")
 
         
 

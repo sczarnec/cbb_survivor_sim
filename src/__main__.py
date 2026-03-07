@@ -17,9 +17,11 @@ days_by_round = [2,2,2,1,1,1,]
 still_alive_arr_orig = np.ones((68,), dtype=int)
 
 
+with open(Path(__file__).parent.parent / "config" / "sim_params.yml", "r") as f:
+    sim_params = yaml.safe_load(f)
 
 
-def run_full_sim(seasons: list[int], n_iter: int, initial_data_dict: dict, still_alive_arr_orig: np.array, days_by_round: list, policy_list: dict):
+def run_full_sim(seasons: list[int], n_iter: int, still_alive_arr_orig: np.array, days_by_round: list, policy_list: dict):
 
     sim_id = datetime.now(ZoneInfo("America/New_York")).strftime("%Y%m%d_%H.%M.%S_%f")
 
@@ -33,4 +35,13 @@ def run_full_sim(seasons: list[int], n_iter: int, initial_data_dict: dict, still
         sim = TournamentSimulator(cfg)
 
         sim.run_sim()
+
+
+run_full_sim(
+    seasons=sim_params["seasons"],
+    n_iter=sim_params["n_iter"],
+    still_alive_arr_orig=still_alive_arr_orig,
+    days_by_round=days_by_round,
+    policy_list=sim_params["policy_list"],
+)
 

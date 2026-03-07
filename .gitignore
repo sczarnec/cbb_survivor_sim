@@ -2,6 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+cbb_survivor_sim.Rproj
 sim_saves/
 input_data/
-cbb_survivor_sim.Rproj
+config/
+__pycache__/
