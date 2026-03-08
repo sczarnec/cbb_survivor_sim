@@ -36,6 +36,10 @@ def run_full_sim(seasons: list[int], n_iter: int, still_alive_arr_orig: np.array
 
         sim.run_sim()
 
+    run_dir = Path(f"sim_saves/run_{sim_id}")
+    with open(run_dir / "sim_params.yml", "w") as f:
+        yaml.safe_dump(sim_params, f, sort_keys=False)
+
 
 run_full_sim(
     seasons=sim_params["seasons"],

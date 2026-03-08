@@ -77,6 +77,20 @@ def load_chosen(run_id, season):
     return _load_and_concat(run_id, "chosen_teams", season)
 
 
+STAT_CONFIG = {
+    "Avg Day":  {"threshold": None, "is_pct": False},
+    "% R64 D1": {"threshold": 0,    "is_pct": True},
+    "% R64 D2": {"threshold": 1,    "is_pct": True},
+    "% R32 D1": {"threshold": 2,    "is_pct": True},
+    "% R32 D2": {"threshold": 3,    "is_pct": True},
+    "% S16 D1": {"threshold": 4,    "is_pct": True},
+    "% S16 D2": {"threshold": 5,    "is_pct": True},
+    "% EE D1":  {"threshold": 6,    "is_pct": True},
+    "% EE D2":  {"threshold": 7,    "is_pct": True},
+    "% FF":     {"threshold": 8,    "is_pct": True},
+    "% Won":    {"threshold": 9,    "is_pct": True},
+}
+
 app = dash.Dash(__name__, title="CBB Survivor Sim")
 
 runs = get_runs()
@@ -134,15 +148,7 @@ app.layout = html.Div([
                 html.Label("Stat"),
                 dcc.Dropdown(
                     id="policy-bar-stat",
-                    options=[
-                        {"label": "Avg Day", "value": "Avg Day"},
-                        {"label": "% R32",   "value": "% R32"},
-                        {"label": "% S16",   "value": "% S16"},
-                        {"label": "% EE",    "value": "% EE"},
-                        {"label": "% FF",    "value": "% FF"},
-                        {"label": "% Champ", "value": "% Champ"},
-                        {"label": "% Won",   "value": "% Won"},
-                    ],
+                    options=[{"label": k, "value": k} for k in STAT_CONFIG],
                     value="Avg Day",
                     clearable=False,
                     style={"width": "200px"},
@@ -379,12 +385,16 @@ def pick_heatmap(run_id, season, policies, teams):
 # Columns: round name -> (label, min day_out to have "made it to" this round)
 # "Made it to R32" means survived R64 (both days) -> round_out > 1
 ROUND_THRESHOLDS = [
-    ("R32",   1),
-    ("S16",   3),
-    ("EE",    5),
-    ("FF",    7),
-    ("Champ", 8),
-    ("Won",   9),
+    ("% R64 D1", 0),
+    ("% R64 D2", 1),
+    ("% R32 D1", 2),
+    ("% R32 D2", 3),
+    ("% S16 D1", 4),
+    ("% S16 D2", 5),
+    ("% EE D1",  6),
+    ("% EE D2",  7),
+    ("% FF",     8),
+    ("% Won",    9),
 ]
 
 
@@ -408,7 +418,7 @@ def summary_table(run_id, season, policies):
         row = {"Policy": f"Policy {policy_idx}"}
         row["Avg Day"] = round(float(np.mean(vals)), 2)
         for label, threshold in ROUND_THRESHOLDS:
-            row[f"% {label}"] = round(float(np.mean(vals > threshold) * 100), 1)
+            row[label] = round(float(np.mean(vals > threshold) * 100), 1)
         rows.append(row)
 
     table_df = pd.DataFrame(rows).sort_values("Avg Day", ascending=False)
@@ -429,17 +439,6 @@ def summary_table(run_id, season, policies):
             {"if": {"row_index": "odd"}, "backgroundColor": "#fafafa"},
         ],
     )
-
-
-STAT_CONFIG = {
-    "Avg Day":  {"threshold": None, "is_pct": False},
-    "% R32":    {"threshold": 1,    "is_pct": True},
-    "% S16":    {"threshold": 3,    "is_pct": True},
-    "% EE":     {"threshold": 5,    "is_pct": True},
-    "% FF":     {"threshold": 7,    "is_pct": True},
-    "% Champ":  {"threshold": 8,    "is_pct": True},
-    "% Won":    {"threshold": 9,    "is_pct": True},
-}
 
 
 @app.callback(
