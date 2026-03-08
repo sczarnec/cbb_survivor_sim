@@ -41,7 +41,7 @@ ROUND_LABELS = {
 def get_runs():
     if not SIM_SAVES_DIR.exists():
         return []
-    return sorted([d.name for d in SIM_SAVES_DIR.iterdir() if d.is_dir()])
+    return sorted([d.name for d in SIM_SAVES_DIR.iterdir() if d.is_dir()], reverse=True)
 
 
 def get_seasons(run_id):
@@ -129,9 +129,52 @@ app.layout = html.Div([
         dcc.Tab(label="Policy Summary Table", children=[
             html.Div(id="summary-table", style={"margin": "20px 0"}),
         ]),
+        dcc.Tab(label="Policy Bar Chart", children=[
+            html.Div([
+                html.Label("Stat"),
+                dcc.Dropdown(
+                    id="policy-bar-stat",
+                    options=[
+                        {"label": "Avg Day", "value": "Avg Day"},
+                        {"label": "% R32",   "value": "% R32"},
+                        {"label": "% S16",   "value": "% S16"},
+                        {"label": "% EE",    "value": "% EE"},
+                        {"label": "% FF",    "value": "% FF"},
+                        {"label": "% Champ", "value": "% Champ"},
+                        {"label": "% Won",   "value": "% Won"},
+                    ],
+                    value="Avg Day",
+                    clearable=False,
+                    style={"width": "200px"},
+                ),
+            ], style={"margin": "16px 0 8px"}),
+            dcc.Graph(id="policy-bar-chart", style={"height": "520px"}),
+        ]),
         dcc.Tab(label="Survival Curves", children=[dcc.Graph(id="survival-curve", style={"height": "520px"})]),
         dcc.Tab(label="Team Advancement", children=[
             html.Div(id="tourney-results", style={"margin": "20px 0"}),
+        ]),
+        dcc.Tab(label="Team Bar Chart", children=[
+            html.Div([
+                html.Label("Stat"),
+                dcc.Dropdown(
+                    id="team-bar-stat",
+                    options=[
+                        {"label": "Avg Round", "value": "Avg Round"},
+                        {"label": "% R64",     "value": "% R64"},
+                        {"label": "% R32",     "value": "% R32"},
+                        {"label": "% S16",     "value": "% S16"},
+                        {"label": "% EE",      "value": "% EE"},
+                        {"label": "% FF",      "value": "% FF"},
+                        {"label": "% Champ",   "value": "% Champ"},
+                        {"label": "% Won",     "value": "% Won"},
+                    ],
+                    value="Avg Round",
+                    clearable=False,
+                    style={"width": "200px"},
+                ),
+            ], style={"margin": "16px 0 8px"}),
+            dcc.Graph(id="team-bar-chart", style={"height": "520px"}),
         ]),
         dcc.Tab(label="Team Pick Frequency", children=[dcc.Graph(id="pick-heatmap", style={"height": "560px"})]),
     ]),
@@ -386,6 +429,126 @@ def summary_table(run_id, season, policies):
             {"if": {"row_index": "odd"}, "backgroundColor": "#fafafa"},
         ],
     )
+
+
+STAT_CONFIG = {
+    "Avg Day":  {"threshold": None, "is_pct": False},
+    "% R32":    {"threshold": 1,    "is_pct": True},
+    "% S16":    {"threshold": 3,    "is_pct": True},
+    "% EE":     {"threshold": 5,    "is_pct": True},
+    "% FF":     {"threshold": 7,    "is_pct": True},
+    "% Champ":  {"threshold": 8,    "is_pct": True},
+    "% Won":    {"threshold": 9,    "is_pct": True},
+}
+
+
+@app.callback(
+    Output("policy-bar-chart", "figure"),
+    Input("run-dropdown", "value"),
+    Input("season-dropdown", "value"),
+    Input("policy-filter", "value"),
+    Input("policy-bar-stat", "value"),
+)
+def policy_bar_chart(run_id, season, policies, stat):
+    df = load_survivor(run_id, season)
+    if df is None:
+        return go.Figure()
+
+    if policies:
+        df = df.loc[df.index.isin(policies)]
+
+    cfg = STAT_CONFIG[stat]
+    x_labels, y_vals, ci_vals = [], [], []
+
+    for policy_idx in df.index:
+        vals = df.loc[policy_idx].values.astype(int)
+        n = len(vals)
+        x_labels.append(f"Policy {policy_idx}")
+
+        if cfg["is_pct"]:
+            p = float(np.mean(vals > cfg["threshold"]))
+            y_vals.append(round(p * 100, 2))
+            ci_vals.append(round(1.96 * np.sqrt(p * (1 - p) / n) * 100, 2))
+        else:
+            mean = float(np.mean(vals))
+            y_vals.append(round(mean, 2))
+            ci_vals.append(round(1.96 * float(np.std(vals, ddof=1)) / np.sqrt(n), 2))
+
+    fig = go.Figure(go.Bar(
+        x=x_labels,
+        y=y_vals,
+        error_y=dict(type="data", array=ci_vals, visible=True),
+        hovertemplate="%{x}<br>" + stat + ": %{y}<br>±%{error_y.array} (95% CI)<extra></extra>",
+    ))
+
+    fig.update_layout(
+        title=f"{stat} by Policy — {season}",
+        xaxis_title="Policy",
+        yaxis_title=stat,
+    )
+    return fig
+
+
+TEAM_STAT_CONFIG = {
+    "Avg Round": {"threshold": None, "is_pct": False},
+    "% R64":     {"threshold": 0,    "is_pct": True},
+    "% R32":     {"threshold": 1,    "is_pct": True},
+    "% S16":     {"threshold": 2,    "is_pct": True},
+    "% EE":      {"threshold": 3,    "is_pct": True},
+    "% FF":      {"threshold": 4,    "is_pct": True},
+    "% Champ":   {"threshold": 5,    "is_pct": True},
+    "% Won":     {"threshold": 6,    "is_pct": True},
+}
+
+
+@app.callback(
+    Output("team-bar-chart", "figure"),
+    Input("run-dropdown", "value"),
+    Input("season-dropdown", "value"),
+    Input("team-filter", "value"),
+    Input("team-bar-stat", "value"),
+)
+def team_bar_chart(run_id, season, teams, stat):
+    df = load_tourney(run_id, season)
+    if df is None:
+        return go.Figure()
+
+    if teams is not None:
+        df = df.loc[df.index.isin(teams)]
+
+    team_names = get_team_names(season)
+    cfg = TEAM_STAT_CONFIG[stat]
+    x_labels, y_vals, ci_vals = [], [], []
+
+    for team_idx in df.index:
+        vals = df.loc[team_idx].values.astype(int)
+        n = len(vals)
+        name = team_names[team_idx] if team_names else f"T{team_idx}"
+        x_labels.append(name)
+
+        if cfg["is_pct"]:
+            p = float(np.mean(vals > cfg["threshold"]))
+            y_vals.append(round(p * 100, 2))
+            ci_vals.append(round(1.96 * np.sqrt(p * (1 - p) / n) * 100, 2))
+        else:
+            mean = float(np.mean(vals))
+            y_vals.append(round(mean, 2))
+            ci_vals.append(round(1.96 * float(np.std(vals, ddof=1)) / np.sqrt(n), 2))
+
+    fig = go.Figure(go.Bar(
+        x=x_labels,
+        y=y_vals,
+        error_y=dict(type="data", array=ci_vals, visible=True),
+        hovertemplate="%{x}<br>" + stat + ": %{y}<br>±%{error_y.array} (95% CI)<extra></extra>",
+    ))
+
+    fig.update_layout(
+        title=f"{stat} by Team — {season}",
+        xaxis_title="Team",
+        yaxis_title=stat,
+        xaxis=dict(tickangle=-45),
+    )
+    return fig
 
 
 if __name__ == "__main__":

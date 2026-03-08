@@ -151,7 +151,7 @@ class TournamentSimulator:
 
             # find the weights for this round, create the objective array (still team id index with objective func as value)
             if r_cur < 5:
-                weights_list = np.array(policy["next_round_weights"][f"r{r_cur}"])
+                weights_list = np.array(policy["next_round_weights"][f"r{r_cur}"], dtype=float)
                 obj_arr = (all_rd_wps_arr * weights_list.T).sum(axis=1)
             else:
                 obj_arr = all_rd_wps_arr.sum(axis=1)
