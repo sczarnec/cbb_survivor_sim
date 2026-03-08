@@ -20,6 +20,9 @@ library(tidyverse)
 
 
 
+```{r}
+cbd_torvik_game_prediction("Duke", "Notre Dame", date = "20261216", location = "N")
+```
 
 
 
