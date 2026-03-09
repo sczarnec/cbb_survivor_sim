@@ -3,11 +3,13 @@ from dash import dcc, html, Input, Output, dash_table
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+import yaml
 from pathlib import Path
 
 
 SIM_SAVES_DIR = Path(__file__).parent.parent / "sim_saves"
 TEAM_ID_MAP_PATH = Path(__file__).parent / "teams_id_map.csv"
+APP_CONFIG_PATH = Path(__file__).parent / "app_config.yml"
 
 # Load team id map: index=team_idx (0-67), columns=season years
 _team_id_map = pd.read_csv(TEAM_ID_MAP_PATH, index_col=0) if TEAM_ID_MAP_PATH.exists() else None
@@ -41,7 +43,18 @@ ROUND_LABELS = {
 def get_runs():
     if not SIM_SAVES_DIR.exists():
         return []
-    return sorted([d.name for d in SIM_SAVES_DIR.iterdir() if d.is_dir()], reverse=True)
+    all_runs = sorted([d.name for d in SIM_SAVES_DIR.iterdir() if d.is_dir()], reverse=True)
+
+    with open(APP_CONFIG_PATH, "r") as f:
+        app_cfg = yaml.safe_load(f)
+
+    mode = app_cfg.get("run_filter", {}).get("mode", "recent")
+    if mode == "manual":
+        manual = app_cfg["run_filter"].get("manual_runs") or []
+        return [r for r in all_runs if r in manual]
+    else:
+        n = app_cfg.get("run_filter", {}).get("n_recent", 2)
+        return all_runs[:n]
 
 
 def get_seasons(run_id):

@@ -1,0 +1,8 @@
+# Controls which runs appear in the Run dropdown.
+# mode: "recent"  -> show the N most recent runs
+# mode: "manual"  -> show only the runs listed under manual_runs
+run_filter:
+  mode: recent
+  n_recent: 2
+  manual_runs:
+    - run_20260101_00.00.00_000000
