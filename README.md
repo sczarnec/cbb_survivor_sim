@@ -21,6 +21,7 @@ README Sections:
 Reach out to Steve at sczarnecki1212@gmail.com with questions
 
 <br>
+<br>
 
 ## SECTION 1: Analysis
 
@@ -52,7 +53,7 @@ The first example of this I'll show is when I tested removing the 2-seed blocker
 
 I then pulled the smart last rounds params out, first not using the EE param then not using the FF param. These showed similar results, so I removed the smart last round params.
 
-At this point, I tested more seed block strategies, seeing if it was best to block the 1 seed in the first round only (P4 and P5), first and second rounds (P0 and P1), or neither (P2 and P3). For average days, blocking neither one, which makes sense: upfront you get more wins and this trickles down. But interestingly, the blocking in both rounds jumped EE D1% up and EE D2% up a bunch (to 10%). Ultimately, I decided to meet in the middle of the two eval criterias and go with the block the 1st seed in the 1st round. I would go back and test 1st and 2nd round blocks later.
+At this point, I tested more seed block strategies, seeing if it was best to block the 1 seed in the first round only (P4 and P5), first and second rounds (P0 and P1), or neither (P2 and P3). For average days, blocking neither one, which makes sense: upfront you get more wins and this trickles down. But interestingly, the blocking in both rounds jumped EE D1% up and EE D2% up a bunch (to 10%). Ultimately, I decided to meet in the middle of the two eval criteria and go with the block the 1st seed in the 1st round. I would go back and test 1st and 2nd round blocks later.
 
 ![Results](analysis/result_pics/20260308_21.01.49_pic.png)
 
@@ -75,29 +76,6 @@ Usually, I think the policy with the best EE D2% is going to win. So, I'm choosi
 
 ```yaml
 policy_list:
-
-
-  - next_round_weights:
-      r0: [.8, -.2, 0, 0, 0, 0]
-      r1: [.9, -.1, 0, 0, 0]
-      r2: [.8, -.2, 0, 0]
-      r3: [1, 0, 0]
-      r4: [1, 0]
-    smart_last_rounds:
-      ee_swap: false
-      ff_swap: false
-    randomness:
-      r0: false
-      r1: false
-    min_region:
-      r0: 1
-      r1: 1
-      r2: 1
-    ignore_seeds:
-      r0: [1]
-      r1: false
-
-
   - next_round_weights:
       r0: [.8, -.2, 0, 0, 0, 0]
       r1: [.9, -.1, 0, 0, 0]
@@ -125,7 +103,7 @@ Overall, it is best to be conservative. Take the more win-now approaches. Howeve
 
 
 
-
+<br>
 <br>
 
 ## SECTION 2: Limitations and Future Directions
@@ -306,6 +284,7 @@ Tabs currently implemented:
 - **Team Pick Frequency**
   - Heatmap of how often each policy picked each team (parsed out of the `chosen_teams` CSVs)
 
+<br>
 <br>
 
 ## SECTION 4: In-Depth Methodology (simulation + parameters)
