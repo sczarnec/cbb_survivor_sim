@@ -1,35 +1,134 @@
 # cbb_survivor_sim
-March Madness Survivor pool simulation
 
-## Overview
+This is a simulation of march madness tournaments designed to help with choosing policies in a survivor pool. 
 
-`cbb_survivor_sim` is a project for exploring strategies for a March Madness **survivor pool**. In a survivor pool, you “pick” one team each tournament day (or round, depending on your pool’s rules). If the team you picked wins, you stay alive and move on—but you typically **can’t pick the same team again**, so using a dominant #1 seed early can help you survive today while hurting your options later. If your picked team loses, you’re eliminated.
+Most people know of survivor pools in the NFL: you pick one team each week. If they win, you are still in. If they lose, you are out. The other caveat: once you pick a team, you can't pick them again.
 
-This repo simulates thousands of possible NCAA Tournament outcomes and measures how different picking approaches perform under those survivor rules—so you can compare strategies like “always take the safest win,” “save top seeds for later,” or “spread picks across regions.” It also includes a small dashboard to review results, compare strategies, and see how often teams are picked and how far they tend to advance in the simulations.
+The March Madness survivor pool is very similar. You pick a team every day of March Madness (except Sweet Sixteen where you pick any 2 over 2 days). Survive and advance, but you can't pick the same team twice.
+The big question here is: do we want to prioritize picking teams that are going to win now for sure, or save them for later? If we pick too many good teams now, we run the risk of not having any left in the later rounds.
+If we pick worse teams now, we might lose too early.
 
-To note: a huge thanks to GitHub Copilot and GPT-5.2 for writing most of this README (I did bravely battle through the Analysis and Limitation sections). You're both the man
+This is a classic problem for a Monte Carlo simulation: what if we were able to create different policies/strategies for picking our teams.
+With win probability data for every possible combination of games, we could run a simulation hundreds of thousands of times and see which policies come out on top.
+There are essentially two parts to this simulation. The first part simulates March Madness. The second picks survivor teams for whatever policies we want to test along the way.
 
 README Sections:
 - Analysis (cool findings, non-technical)
 - Limitations and Future Directions (not too technical, good to consider when interpreting results)
 - Running the Solution (you're an interested nerd and want to run it yourself)
-- In-depth Methodology (wow, you're really a nerd. here are the weeds)
+- In-depth Methodology (wow, you're really a nerd. here are the computational weeds)
 
 Reach out to Steve at sczarnecki1212@gmail.com with questions
 
 <br>
 
-## Analysis
+## SECTION 1: Analysis
 
-This is my analysis up to this commit. I probably haven't tried everything, but here's what I got so far.
+I'll start with the findings because they are more interpretable. 
 
+These are the parameters I could change for each strategy:
+
+- `next_round_weights`: for each round in the sim, how should I weight the teams' chances to advance to each round? For example, if my weights for the first round were [.8, .2, 0, 0, 0], then
+    the function to determine what team I pick in that round would be (P(winning this round) * .8) + (P(Winning next round) * .2) + (P(Winning in two rounds) * 0) + ... .
+    You can have different weights for different rounds (e.g. for R64 you have those weights but in R32 you weight it [.9, .1, 0, 0], etc)
+- `ignore_seeds`: for R64 and R32, you can exclude the choosing of any seed numbers you want. A parameter of [1] for the first round would prevent a 1 seed from being chosen
+- `randomness`: you can choose to have randomness for the selection of teams in the R64 or R32. The teams are all ranked based on the weighted function, but once they are ranked, you can choose a team other than the best.
+    For example, if the parameter is [.5, .5], then you have a 50% chance of selecting the best team and a 50% chance of selecting the second best team.
+- `min_region`: you can make it so you can't select a team in a region if there are only N amount of teams left in that region in the first three rounds.
+    So, if there is only 1 valid team left in the East in the S16 and you set the minimum to one, that team cannot be picked in that round.
+- `smart_last_rounds`: the idea here is that to make it to the very end, you have to choose teams in the Elite Eight and Final Four who will eventually lose.
+    For example, if you choose the future National Champion to win in the Final Four, you won't be able to pick them for the Natty since you picked them for the Final Four. The best you can do is make it to the Natty.
+    If you choose teams in the Elite 8 who will win the Final Four, the same applies. So, this parameter picks the second best options for those rounds.
+
+For the runs, I ran 5000 iterations for seasons [2015, 2016, 2017, 2018, 2024, and 2025]. I determine the years by finding the Wasserstein distances between the years' win probability distributions. Those were the most similar to each other and had extremely similar distributions compared to the others.
+
+One other thing to note before we go into the runs is the objective of the survivor pool. It'd be great to get every round right all the way to the championship, but we often don't need that. Usually, the survivor pool only lasts until the Elite 8. If you can make it past that point or even just hit 1 of 2 Elite Eight teams, you are in good shape. So, I wanted to prioritize EE% as my goal, also using Average Days lasted as another evaluation metric.
+
+For my initial runs, I tried using all of the parameters. I used different combinations of next round weights (usually doing the current round and the last round), ignoring 1 and 2 seeds, keeping a 1-2 team minimum on the regions, and using smart last rounds. I noticed an initial trend: the more straightforward the params, the better. Making them fancy and not picking the teams that had the best chances to win right now hurt us in the long run.
+
+The first example of this I'll show is when I tested removing the 2-seed blocker. It ended up being better to keep the 1-seed blocker, but removing the 2 was better for both Avg Days and EE D2, as you can see in the image below (Policies 5 and 6). To note, I weighted Policy 5's rext round weights more "Win Now" heavy while I weighted Policy 6 more "Win Later" heavy. It's interesting that Win Now did better for EE D1 but Win Later did better for EE D2.
+
+![Results](analysis/result_pics/20260307_19.43.26_pic.png)
+
+I then pulled the smart last rounds params out, first not using the EE param then not using the FF param. These showed similar results, so I removed the smart last round params.
+
+At this point, I tested more seed block strategies, seeing if it was best to block the 1 seed in the first round only (P4 and P5), first and second rounds (P0 and P1), or neither (P2 and P3). For average days, blocking neither one, which makes sense: upfront you get more wins and this trickles down. But interestingly, the blocking in both rounds jumped EE D1% up and EE D2% up a bunch (to 10%). Ultimately, I decided to meet in the middle of the two eval criterias and go with the block the 1st seed in the 1st round. I would go back and test 1st and 2nd round blocks later.
+
+![Results](analysis/result_pics/20260308_21.01.49_pic.png)
+
+At this point, I felt that I had a good sense for the parameters other than next round weights: only use the seed blocker. It's probably going to be best to just block Seed 1 in R64 or R64 and R32. So, I played around with the next round weights a little bit. I ran it a bunch of times, so I will spare the analysis on them all. But, I found the best combination below:
+
+```yaml
+- next_round_weights:
+    r0: [.8, -.2, 0, 0, 0, 0]
+    r1: [.9, -.1, 0, 0, 0]
+    r2: [.8, -.2, 0, 0]
+    r3: [1, 0, 0]
+    r4: [1, 0]
+```
+
+After finding good weights, I finally tested the just R1 1-Seed block and the R1 and R2 1-Seed block. As expected, the EE D2% shot up to over 11% and the EE D1 was barely sdmaller at 28.9% compared to 28.6%.
+
+![Results](analysis/result_pics/20260316_23.42.58_pic.png)
+
+Usually, I think the policy with the best EE D2% is going to win. So, I'm choosing this as my optimal strategy after initial analysis:
+
+```yaml
+policy_list:
+
+
+  - next_round_weights:
+      r0: [.8, -.2, 0, 0, 0, 0]
+      r1: [.9, -.1, 0, 0, 0]
+      r2: [.8, -.2, 0, 0]
+      r3: [1, 0, 0]
+      r4: [1, 0]
+    smart_last_rounds:
+      ee_swap: false
+      ff_swap: false
+    randomness:
+      r0: false
+      r1: false
+    min_region:
+      r0: 1
+      r1: 1
+      r2: 1
+    ignore_seeds:
+      r0: [1]
+      r1: false
+
+
+  - next_round_weights:
+      r0: [.8, -.2, 0, 0, 0, 0]
+      r1: [.9, -.1, 0, 0, 0]
+      r2: [.8, -.2, 0, 0]
+      r3: [1, 0, 0]
+      r4: [1, 0]
+    smart_last_rounds:
+      ee_swap: false
+      ff_swap: false
+    randomness:
+      r0: false
+      r1: false
+    min_region:
+      r0: 1
+      r1: 1
+      r2: 1
+    ignore_seeds:
+      r0: [1]
+      r1: [1]
+```
+
+More analysis can definitely be done. I just squeezed this in right before the tourney. But, I think it's a good start.
+
+Overall, it is best to be conservative. Take the more win-now approaches. However, it will help your chances slightly if you block the 1-seed from contention in the first two rounds and dowweight this current round slightly, as long as your goal is to make it past the Elite Eight.
 
 
 
 
 <br>
 
-## Limitations and Future Directions
+## SECTION 2: Limitations and Future Directions
 
 There were some limitations when analyzing this data:
 
@@ -37,7 +136,6 @@ There were some limitations when analyzing this data:
 - **Real-World Factors/Dependence**: each game is treated as an independent event in this simulation. However, real-life is different, with injuries, momentum, and other factors that aren't considered. I still believe that most aspects of the games are independent, so this is fine for our purposes.
 - **Chosen Seasons**: to find similar seasons to our most recent (2025), we computed Wasserstein Distances for every year of data we have, comparing the similarities between win probability distributions. In the end, we determined that 2015-2018 and 2024-2025 were the years most similar to each other. Although these years are similar to recent trends, who knows how long they will be true for. Additionally, 6 different brackets isn't a ton for the simulation. Just something to consider during interpretation.
 - **Real-Life Applicability/High Variance**: in terms of implementation, this simulation aims to give you an edge by finding optimal policies. However, in terms of real-world applicability, there is so much variance in just one March Madness bracket that you're not going to see consistent results from using these policies from year to year. It might be a little better if you have multiple entries and diversify, but there is still way too much variance.
-
 
 Future directions:
 
@@ -47,9 +145,9 @@ Future directions:
 <br>
 
 
-## Running the Solution
+## SECTION 3: Running the Solution
 
-Honestly, I don't think anyone's gonna run this. I might commit the data for fun, but if not, feel free to reach out to sczarnecki1212@gmail.com to receive it.
+I had GitHub Copilot write this section in case I need to go back and remember how to run it. Don't need to read this all.
 
 The `analysis/` folder contains a **Dash app** (`analysis/app.py`) that reads previously-saved simulation outputs from `sim_saves/` and provides interactive summaries/visualizations.
 
@@ -210,7 +308,9 @@ Tabs currently implemented:
 
 <br>
 
-## In-Depth Methodology (simulation + parameters)
+## SECTION 4: In-Depth Methodology (simulation + parameters)
+
+I had GitHub Copilot write this section. It's helpful if I have to go back in the future to remember what I did. You don't need to read this all.
 
 This repository simulates **NCAA Men’s Tournament (“March Madness”) outcomes** and evaluates **survivor-pool picking strategies (“policies”)** via Monte Carlo. The core logic lives in `src/`:
 
@@ -505,6 +605,7 @@ Typical policy fields referenced in code:
 
 Here is a sample config yml file:
 
+```yml
 seasons:
   - 2015
   - 2016
@@ -537,3 +638,4 @@ policy_list:
     ignore_seeds:
       r0: [1]
       r1: false
+```
